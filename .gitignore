@@ -1,0 +1,11 @@
+.klvoltage.ko.cmd
+.klvoltage.mod.o.cmd
+.klvoltage.o.cmd
+.tmp_versions/
+Module.symvers
+klvoltage.ko
+klvoltage.mod.c
+klvoltage.mod.o
+klvoltage.o
+modules.order
+
