@@ -35,6 +35,7 @@ struct measurement_s {
 	/* Voltage - a value in millivolts. */
 	/* Temperature - in 1/1000 of a degree C */
 	/* Current - in 1/1000 of an amp */
+	/* Power - in 1/1000000 of a watt */
 	int input;	/* Current/Active value */
 	int min;
 	int max;
@@ -44,10 +45,11 @@ struct measurement_s {
 #define KLV_SYSVDD 0
 #define KLV_CHIP_TEMP 1
 #define KLV_CHIP_CURRENT 2
+#define KLV_CHIP_POWER 3
 
 /* Device driver data structure. */
 struct my_driver_data {
-	struct measurement_s metrics[3];
+	struct measurement_s metrics[4];
 	struct device *hwmon_dev;
 };
 
@@ -55,6 +57,7 @@ static const char *const input_names[] = {
 	[KLV_SYSVDD] = "SYSVDD",
 	[KLV_CHIP_TEMP] = "PMIC",
 	[KLV_CHIP_CURRENT] = "PMIC",
+	[KLV_CHIP_POWER] = "SYSPOWER",
 };
 
 static ssize_t show_label(struct device *dev, struct device_attribute *attr, char *buf)
@@ -132,6 +135,13 @@ static SENSOR_DEVICE_ATTR(curr1_max, S_IRUGO, get_max, NULL, KLV_CHIP_CURRENT);
 static SENSOR_DEVICE_ATTR(curr1_label, S_IRUGO, show_label, NULL, KLV_CHIP_CURRENT);
 /* End: Current */
 
+/* Power */
+static SENSOR_DEVICE_ATTR(power1_input, S_IRUGO | S_IWUSR, get_input, set_input, KLV_CHIP_POWER);
+static SENSOR_DEVICE_ATTR(power1_min, S_IRUGO, get_min, NULL, KLV_CHIP_POWER);
+static SENSOR_DEVICE_ATTR(power1_max, S_IRUGO, get_max, NULL, KLV_CHIP_POWER);
+static SENSOR_DEVICE_ATTR(power1_label, S_IRUGO, show_label, NULL, KLV_CHIP_POWER);
+/* End: Power */
+
 static struct attribute *klv_attrs[] = {
 	&sensor_dev_attr_in0_input.dev_attr.attr,
 	&sensor_dev_attr_in0_label.dev_attr.attr,
@@ -145,6 +155,10 @@ static struct attribute *klv_attrs[] = {
 	&sensor_dev_attr_curr1_label.dev_attr.attr,
 	&sensor_dev_attr_curr1_min.dev_attr.attr,
 	&sensor_dev_attr_curr1_max.dev_attr.attr,
+	&sensor_dev_attr_power1_input.dev_attr.attr,
+	&sensor_dev_attr_power1_label.dev_attr.attr,
+	&sensor_dev_attr_power1_min.dev_attr.attr,
+	&sensor_dev_attr_power1_max.dev_attr.attr,
 	NULL
 };
 ATTRIBUTE_GROUPS(klv);
@@ -216,6 +230,11 @@ static int my_driver_probe(struct platform_device *pdev)
 	initializeMeasurement(&driver_data->metrics[KLV_SYSVDD], 5000, 1200, 24000, 24000);
 	initializeMeasurement(&driver_data->metrics[KLV_CHIP_TEMP], 2000, 900, 2500, 2400);
 	initializeMeasurement(&driver_data->metrics[KLV_CHIP_CURRENT], 500, 10, 5000, 6000);
+	initializeMeasurement(&driver_data->metrics[KLV_CHIP_POWER],
+		1100,		/* Current value:  1.1mW */
+		200,		/* Minimum: 200uW */
+		2000000,	/* Maxiumum: 2W */
+		1900000		/* Critical: 1.9W */);
 
 	driver_data->hwmon_dev = devm_hwmon_device_register_with_groups(&pdev->dev, "klvoltage", driver_data, klv_groups);
 
